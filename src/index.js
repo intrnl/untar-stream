@@ -46,6 +46,9 @@ export class Untar {
 		this.reader = chunked(stream);
 	}
 
+	/**
+	 * @returns {Promise<TarEntry | null>}
+	 */
 	async extract () {
 		if (this.entry && !this.entry._consumed) {
 			// discard the body so we can read the next entry
