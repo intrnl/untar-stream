@@ -1,0 +1,18 @@
+{
+	"type": "module",
+	"name": "@intrnl/untar-stream",
+	"description": "Streamable implementation of untar",
+	"version": "0.1.0",
+	"author": "intrnl",
+	"license": "MIT",
+	"repository": {
+		"url": "https://codeberg.org/intrnl/untar-stream"
+	},
+	"files": [
+		"src/"
+	],
+	"main": "src/index.js",
+	"dependencies": {
+		"@intrnl/chunked-uint8-iterator": "^0.1.1"
+	}
+}
