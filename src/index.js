@@ -132,7 +132,10 @@ export class Untar {
 		let header = {};
 
 		for (let field of USTAR_FIELDS) {
-			header[field.label] = block.subarray(offset, offset + field.length);
+			if (field.label !== null) {
+				header[field.label] = block.subarray(offset, offset + field.length);
+			}
+
 			offset += field.length;
 		}
 
