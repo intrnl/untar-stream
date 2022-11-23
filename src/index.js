@@ -226,49 +226,28 @@ class TarEntry {
 	 * @param {Record<string, Uint8Array>} header
 	 */
 	_parseMetadata (header) {
-		let _prefix = trim(header.prefix);
+		let _prefix = decodeString(header.prefix);
+		let _name = decodeString(header.name);
 
-		let _owner = trim(header.owner);
-		let _group = trim(header.group);
+		this.name = _prefix.length > 0 ? _prefix + '/' + _name : _name;
 
-		let _name = decodeString(trim(header.name));
+		this.mode = decodeOctal(header.mode);
+		this.uid = decodeOctal(header.uid);
+		this.gid = decodeOctal(header.gid);
 
-		this.name = _prefix.byteLength > 0
-			? decodeString(_prefix) + '/' + _name
-			: _name
+		this.size = decodeOctal(header.size);
+		this.mtime = decodeOctal(header.mtime);
 
-		this.mode = parseInt(decodeString(header.mode), 8);
-		this.uid = parseInt(decodeString(header.uid), 8);
-		this.gid = parseInt(decodeString(header.gid), 8);
+		this.type = FILE_TYPES[decodeOctal(header.type)];
 
-		this.size = parseInt(decodeString(header.size), 8);
-		this.mtime = parseInt(decodeString(header.mtime), 8);
+		this.linkName = decodeString(header.linkName);
 
-		this.type = FILE_TYPES[parseInt(decodeString(header.type), 8)];
+		this.owner = decodeString(header.owner);
+		this.group = decodeString(header.group);
 
-		this.linkName = decodeString(trim(header.linkName));
-
-		this.owner = _owner.byteLength > 0 ? decodeString(_owner) : null;
-		this.group = _group.byteLength > 0 ? decodeString(_group) : null;
-
-		this.majorNumber = parseInt(decodeString(header.majorNumber), 8);
-		this.minorNumber = parseInt(decodeString(header.minorNumber), 8);
+		this.majorNumber = decodeOctal(header.majorNumber);
+		this.minorNumber = decodeOctal(header.minorNumber);
 	}
-}
-
-/**
- * Remove trailing null codes from array
- * @param {Uint8Array} arr
- * @returns {Uint8Array}
- */
-function trim (arr) {
-	for (let idx = 0, len = arr.length; idx < len; idx++) {
-		if (arr[idx] === 0) {
-			return arr.subarray(0, idx);
-		}
-	}
-
-	return arr;
 }
 
 /**
@@ -280,8 +259,19 @@ function trim (arr) {
 	let res = '';
 
 	for (let idx = 0, len = arr.length; idx < len; idx++) {
-		res += String.fromCharCode(arr[idx]);
+		let code = arr[idx];
+
+		if (code === 0) {
+			break;
+		}
+
+		res += String.fromCharCode(code);
 	}
 
 	return res;
+}
+
+function decodeOctal (arr) {
+	let res = decodeString(arr);
+	return res ? parseInt(res, 8) : 0;
 }
