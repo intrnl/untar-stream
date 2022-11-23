@@ -33,8 +33,6 @@ let FILE_TYPES = {
   7: 'contiguous-file',
 };
 
-let decoder = new TextDecoder();
-
 export class Untar {
 	/**
 	 * @param {ReadableStream<Uint8Array>} stream
@@ -94,8 +92,8 @@ export class Untar {
 		let header = this._parseHeader(block);
 		let blocksum = this._getChecksum(block);
 
-		let magic = decoder.decode(header.ustar);
-		let checksum = decoder.decode(header.checksum);
+		let magic = decodeString(header.ustar);
+		let checksum = decodeString(header.checksum);
 
 		if (parseInt(checksum, 8) !== blocksum) {
 			// Reached end of file
@@ -233,28 +231,28 @@ class TarEntry {
 		let _owner = trim(header.owner);
 		let _group = trim(header.group);
 
-		let _name = decoder.decode(trim(header.name));
+		let _name = decodeString(trim(header.name));
 
 		this.name = _prefix.byteLength > 0
-			? decoder.decode(_prefix) + '/' + _name
+			? decodeString(_prefix) + '/' + _name
 			: _name
 
-		this.mode = parseInt(decoder.decode(header.mode), 8);
-		this.uid = parseInt(decoder.decode(header.uid), 8);
-		this.gid = parseInt(decoder.decode(header.gid), 8);
+		this.mode = parseInt(decodeString(header.mode), 8);
+		this.uid = parseInt(decodeString(header.uid), 8);
+		this.gid = parseInt(decodeString(header.gid), 8);
 
-		this.size = parseInt(decoder.decode(header.size), 8);
-		this.mtime = parseInt(decoder.decode(header.mtime), 8);
+		this.size = parseInt(decodeString(header.size), 8);
+		this.mtime = parseInt(decodeString(header.mtime), 8);
 
-		this.type = FILE_TYPES[parseInt(decoder.decode(header.type), 8)];
+		this.type = FILE_TYPES[parseInt(decodeString(header.type), 8)];
 
-		this.linkName = decoder.decode(trim(header.linkName));
+		this.linkName = decodeString(trim(header.linkName));
 
-		this.owner = _owner.byteLength > 0 ? decoder.decode(_owner) : null;
-		this.group = _group.byteLength > 0 ? decoder.decode(_group) : null;
+		this.owner = _owner.byteLength > 0 ? decodeString(_owner) : null;
+		this.group = _group.byteLength > 0 ? decodeString(_group) : null;
 
-		this.majorNumber = parseInt(decoder.decode(header.majorNumber), 8);
-		this.minorNumber = parseInt(decoder.decode(header.minorNumber), 8);
+		this.majorNumber = parseInt(decodeString(header.majorNumber), 8);
+		this.minorNumber = parseInt(decodeString(header.minorNumber), 8);
 	}
 }
 
@@ -271,4 +269,19 @@ function trim (arr) {
 	}
 
 	return arr;
+}
+
+/**
+ * Decode buffer into string
+ * @param {Uint8Array} arr
+ * @returns {string}
+ */
+ function decodeString (arr) {
+	let res = '';
+
+	for (let idx = 0, len = arr.length; idx < len; idx++) {
+		res += String.fromCharCode(arr[idx]);
+	}
+
+	return res;
 }
