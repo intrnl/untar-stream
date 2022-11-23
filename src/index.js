@@ -67,7 +67,10 @@ export class Untar {
 		return entry;
 	}
 
-	async * [Symbol.asyncIterator] () {
+	/**
+	 * @returns {AsyncGenerator<TarEntry>}
+	 */
+	async * getIterator () {
 		while (true) {
 			let entry = await this.extract();
 
@@ -77,6 +80,10 @@ export class Untar {
 
 			yield entry;
 		}
+	}
+
+	[Symbol.asyncIterator] () {
+		return this.getIterator();
 	}
 
 	/**
