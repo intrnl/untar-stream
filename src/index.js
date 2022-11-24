@@ -10,10 +10,10 @@ let USTAR_FIELDS = [
   { label: 'gid',         length: 8   },
   { label: 'size',        length: 12  },
   { label: 'mtime',       length: 12  },
-	{ label: 'checksum',    length: 8   },
+	{ label: null,          length: 8   },
   { label: 'type',        length: 1   },
 	{ label: 'linkName',    length: 100 },
-	{ label: 'ustar',       length: 8   },
+	{ label: null,          length: 8   },
 	{ label: 'owner',       length: 32  },
   { label: 'group',       length: 32  },
   { label: 'majorNumber', length: 8   },
@@ -99,13 +99,9 @@ export class Untar {
 			return null;
 		}
 
-		let header = this._parseHeader(block);
 		let blocksum = this._getChecksum(block);
 
-		let magic = decodeString(header.ustar);
-		let checksum = decodeString(header.checksum);
-
-		if (parseInt(checksum, 8) !== blocksum) {
+		if (parseInt(decodeString(block.subarray(148, 156)), 8) !== blocksum) {
 			// Reached end of file
 			if (blocksum === INITIAL_CHECKSUM) {
 				return null;
@@ -114,11 +110,11 @@ export class Untar {
 			throw new Error(`Checksum error`);
 		}
 
-		if (magic.indexOf('ustar') !== 0) {
+		if (decodeString(block.subarray(257, 263)).indexOf('ustar') !== 0) {
 			throw new Error(`Unsupported archive format: ${magic}`)
 		}
 
-		return header;
+		return this._parseHeader(block);
 	}
 
 	/**
