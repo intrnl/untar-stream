@@ -4,33 +4,33 @@ let RECORD_SIZE = 512;
 let INITIAL_CHECKSUM = 8 * 32;
 
 let USTAR_FIELDS = [
-  { label: 'name',        length: 100 },
-  { label: 'mode',        length: 8   },
-  { label: 'uid',         length: 8   },
-  { label: 'gid',         length: 8   },
-  { label: 'size',        length: 12  },
-  { label: 'mtime',       length: 12  },
+	{ label: 'name',        length: 100 },
+	{ label: 'mode',        length: 8   },
+	{ label: 'uid',         length: 8   },
+	{ label: 'gid',         length: 8   },
+	{ label: 'size',        length: 12  },
+	{ label: 'mtime',       length: 12  },
 	{ label: null,          length: 8   },
-  { label: 'type',        length: 1   },
+	{ label: 'type',        length: 1   },
 	{ label: 'linkName',    length: 100 },
 	{ label: null,          length: 8   },
 	{ label: 'owner',       length: 32  },
-  { label: 'group',       length: 32  },
-  { label: 'majorNumber', length: 8   },
-  { label: 'minorNumber', length: 8   },
-  { label: 'prefix',      length: 155 },
-  { label: null,          length: 12  },
+	{ label: 'group',       length: 32  },
+	{ label: 'majorNumber', length: 8   },
+	{ label: 'minorNumber', length: 8   },
+	{ label: 'prefix',      length: 155 },
+	{ label: null,          length: 12  },
 ];
 
 let FILE_TYPES = {
-  0: 'file',
-  1: 'link',
-  2: 'symlink',
-  3: 'character-device',
-  4: 'block-device',
-  5: 'directory',
-  6: 'fifo',
-  7: 'contiguous-file',
+	0: 'file',
+	1: 'link',
+	2: 'symlink',
+	3: 'character-device',
+	4: 'block-device',
+	5: 'directory',
+	6: 'fifo',
+	7: 'contiguous-file',
 };
 
 export class Untar {
