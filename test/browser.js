@@ -1,4 +1,5 @@
 import { Untar } from '../src/index.js';
+import { createStreamIterator } from '@intrnl/chunked-uint8-iterator';
 
 /** @type {HTMLInputElement} */
 let input = document.getElementById('input');
@@ -23,7 +24,7 @@ input.addEventListener('change', () => {
  * @param {AbortSignal} signal
  */
 async function retrieveTarListing (file, signal) {
-	let stream = file.stream();
+	let stream = createStreamIterator(file.stream());
 	let untar = new Untar(stream);
 
 	list.innerHTML = '';

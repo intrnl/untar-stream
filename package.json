@@ -16,7 +16,7 @@
 		"test:web": "web-dev-server --node-resolve --app-index test/index.html"
 	},
 	"dependencies": {
-		"@intrnl/chunked-uint8-iterator": "^0.1.2"
+		"@intrnl/chunked-uint8-iterator": "^0.2.0"
 	},
 	"devDependencies": {
 		"@web/dev-server": "^0.1.35"
