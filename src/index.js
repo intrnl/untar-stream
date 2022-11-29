@@ -68,18 +68,32 @@ export class Untar {
 	}
 
 	/**
-	 * @returns {AsyncGenerator<TarEntry>}
+	 * @returns {AsyncIterableIterator<TarEntry>}
 	 */
-	async * getIterator () {
-		while (true) {
-			let entry = await this.extract();
+	getIterator () {
+		let _this = this;
 
-			if (entry === null) {
-				return;
-			}
+		return {
+			[Symbol.asyncIterator] () {
+				return this;
+			},
 
-			yield entry;
-		}
+			async next () {
+				let entry = await _this.extract();
+
+				if (entry === null) {
+					return { value: null, done: true };
+				}
+
+				return { value: entry, done: false };
+			},
+			return (value) {
+				_this.reader.return(value);
+			},
+			throw (err) {
+				_this.reader.throw(err);
+			},
+		};
 	}
 
 	[Symbol.asyncIterator] () {
