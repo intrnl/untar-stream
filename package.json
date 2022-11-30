@@ -15,10 +15,8 @@
 	"scripts": {
 		"test:web": "web-dev-server --node-resolve --app-index test/index.html"
 	},
-	"dependencies": {
-		"@intrnl/iterable-reader": "^0.1.2"
-	},
 	"devDependencies": {
+		"@intrnl/iterable-reader": "^0.2.0",
 		"@web/dev-server": "^0.1.35"
 	}
 }

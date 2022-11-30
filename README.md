@@ -2,6 +2,9 @@
 
 Streamable implementation of untar
 
+This library expects a ReadSeeker interface, you can convert async iterables by
+using [`@intrnl/iterable-reader`][iterable-reader].
+
 ```js
 import { createReadStream } from 'node:fs';
 import { createIterableReader } from '@intrnl/iterable-reader';
@@ -26,6 +29,8 @@ for await (let entry of untar) {
 	}
 }
 ```
+
+[iterable-reader]: https://codeberg.org/intrnl/iterable-reader
 
 ## Working with Web Streams
 

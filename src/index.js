@@ -1,3 +1,9 @@
+/**
+ * @typedef {object} ReadSeeker
+ * @property {(p: Uint8Array) => Promise<number | null>} read
+ * @property {(offset: number, whence: number) => Promise<number>} seek
+ */
+
 let RECORD_SIZE = 512;
 let INITIAL_CHECKSUM = 8 * 32;
 
@@ -31,9 +37,11 @@ let FILE_TYPES = {
 	7: 'contiguous-file',
 };
 
+let SEEK_MODE_CURRENT = 1;
+
 export class Untar {
 	/**
-	 * @param {import('@intrnl/iterable-reader').ReadSeeker} reader
+	 * @param {ReadSeeker} reader
 	 */
 	constructor (reader) {
 		/** @type {TarEntry | null} */
@@ -170,7 +178,7 @@ class TarEntry {
 	/**
 	 * @private
 	 * @param {Uint8Array} header
-	 * @param {import('@intrnl/iterable-reader').ReadSeeker} reader
+	 * @param {ReadSeeker} reader
 	 */
 	constructor (header, reader) {
 		this._parseMetadata(header);
@@ -186,7 +194,7 @@ class TarEntry {
 			return;
 		}
 
-		await this._reader.seek(remaining);
+		await this._reader.seek(remaining, SEEK_MODE_CURRENT);
 	}
 
 	/**
