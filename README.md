@@ -4,26 +4,56 @@ Streamable implementation of untar
 
 ```js
 import { createReadStream } from 'node:fs';
+import { createIterableReader } from '@intrnl/iterable-reader';
 import { Untar } from '@intrnl/untar-stream';
 
 let stream = createReadStream('./archive.tar');
 
-let untar = new Untar(stream);
+let reader = createIterableReader(stream);
+let untar = new Untar(reader);
 
 for await (let entry of untar) {
-  console.log(entry.name);
+	console.log(entry.name);
 
-  if (entry.name === 'actor.json') {
-    let buf = new Uint8Array(entry.size);
-    let offset = 0;
+	if (entry.name === 'actor.json') {
+		let bytes = new Uint8Array(entry.size);
+		await entry.read(bytes);
 
-    for await (let values of entry) {
-      buf.set(values, offset);
-      offset += values.byteLength;
-    }
+		let decoder = new TextDecoder();
+		let text = decoder.decode(bytes);
 
-    let decoder = new TextDecoder();
-    console.log(decoder.decode(buf));
-  }
+		console.log(JSON.parse(text));
+	}
+}
+```
+
+## Working with Web Streams
+
+Unfortunately browsers hasn't implemented using ReadableStream directly as an
+async iterator, in the meantime, you could use this to convert them into one.
+
+```js
+function createStreamIterator (stream) {
+	// return if browser already supports async iterator in stream
+	if (Symbol.asyncIterator in stream) {
+		return stream[Symbol.asyncIterator]();
+	}
+
+	let reader = stream.getReader();
+
+	return {
+		[Symbol.asyncIterator] () {
+			return this;
+		},
+		next () {
+			return reader.read();
+		},
+		return () {
+			reader.releaseLock();
+		},
+		throw () {
+			reader.releaseLock();
+		},
+	};
 }
 ```

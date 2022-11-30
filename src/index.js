@@ -1,5 +1,3 @@
-import chunked from '@intrnl/chunked-uint8-iterator';
-
 let RECORD_SIZE = 512;
 let INITIAL_CHECKSUM = 8 * 32;
 
@@ -35,23 +33,22 @@ let FILE_TYPES = {
 
 export class Untar {
 	/**
-	 * @param {ReadableStream<Uint8Array>} stream
+	 * @param {import('@intrnl/iterable-reader').ReadSeeker} reader
 	 */
-	constructor (stream) {
-		/** @type {ReadableStream} */
-		this.stream = stream;
+	constructor (reader) {
 		/** @type {TarEntry | null} */
 		this.entry = null;
 
-		this.reader = chunked(stream);
+		this._reader = reader;
+		this._chunk = new Uint8Array(512);
 	}
 
 	/**
 	 * @returns {Promise<TarEntry | null>}
 	 */
 	async extract () {
-		if (this.entry && !this.entry._consumed) {
-			// discard the body so we can read the next entry
+		if (this.entry) {
+			// discard the entry to read the next one
 			await this.entry.discard();
 		}
 
@@ -61,7 +58,7 @@ export class Untar {
 			return null;
 		}
 
-		let entry = new TarEntry(header, this.reader);
+		let entry = new TarEntry(header, this._reader);
 
 		this.entry = entry;
 		return entry;
@@ -87,12 +84,6 @@ export class Untar {
 
 				return { value: entry, done: false };
 			},
-			return (value) {
-				_this.reader.return(value);
-			},
-			throw (err) {
-				_this.reader.throw(err);
-			},
 		};
 	}
 
@@ -106,16 +97,16 @@ export class Untar {
 	 * @returns {Promise<null | Record<string, Uint8Array>>}
 	 */
 	async _getHeader () {
-		let result = await this.reader.next();
-		let block = result.value;
+		let chunk = this._chunk;
+		let read = await this._reader.read(chunk);
 
-		if (block === null) {
+		if (read === null) {
 			return null;
 		}
 
-		let blocksum = this._getChecksum(block);
+		let blocksum = this._getChecksum(chunk);
 
-		if (parseInt(decodeString(block.subarray(148, 156)), 8) !== blocksum) {
+		if (parseInt(decodeString(chunk.subarray(148, 156)), 8) !== blocksum) {
 			// Reached end of file
 			if (blocksum === INITIAL_CHECKSUM) {
 				return null;
@@ -124,11 +115,11 @@ export class Untar {
 			throw new Error(`Checksum error`);
 		}
 
-		if (decodeString(block.subarray(257, 263)).indexOf('ustar') !== 0) {
+		if (decodeString(chunk.subarray(257, 263)).indexOf('ustar') !== 0) {
 			throw new Error(`Unsupported archive format: ${magic}`)
 		}
 
-		return this._parseHeader(block);
+		return this._parseHeader(chunk);
 	}
 
 	/**
@@ -179,69 +170,50 @@ class TarEntry {
 	/**
 	 * @private
 	 * @param {Uint8Array} header
-	 * @param {ReturnType<typeof chunked>} reader
+	 * @param {import('@intrnl/iterable-reader').ReadSeeker} reader
 	 */
 	constructor (header, reader) {
 		this._parseMetadata(header);
-
-		this.entrySize = Math.ceil(this.size / RECORD_SIZE) * RECORD_SIZE;
-
-		this._consumed = false;
 
 		this._read = 0;
 		this._reader = reader;
 	}
 
 	async discard () {
-		let iterator = this.getIterator();
+		let remaining = this.entrySize - this._read;
 
-		while (!this._consumed) {
-			await iterator.next();
+		if (remaining <= 0) {
+			return;
 		}
+
+		await this._reader.seek(remaining);
 	}
 
 	/**
-	 * @returns {AsyncIterableIterator<Uint8Array>}
+	 * @param {Uint8Array} p
+	 * @returns {Promise<number | null>}
 	 */
-	getIterator () {
-		let entry = this;
+	async read (p) {
+		let remaining = this.size - this._read;
 
-		return {
-			[Symbol.asyncIterator] () {
-				return this;
-			},
+		if (remaining <= 0) {
+			return null;
+		}
 
-			async next () {
-				let entryBytesLeft = entry.entrySize - entry._read;
-				let bytesLeft = entry.size - entry._read;
+		if (remaining >= p.byteLength) {
+			this._read += p.byteLength;
+			return this._reader.read(p);
+		}
 
-				if (entryBytesLeft <= 0) {
-					entry._consumed = true;
-					return { done: true, value: null };
-				}
+		// User exceeded the remaining size of this entry, we can't fulfill that
+		// directly because it means reading partially into the next entry
+		this._read += remaining;
 
-				let result = await entry._reader.next();
-				let values = result.value;
-				let length = values.byteLength;
+		let block = new Uint8Array(remaining);
+		let n = await this._reader.read(block);
 
-				if (values === null) {
-					entry._consumed = true;
-				}
-
-				if (values === null || bytesLeft <= 0) {
-					return { done: true, value: null };
-				}
-
-				entry._read += length;
-
-				let buf = bytesLeft < length ? values.subarray(0, bytesLeft) : values;
-				return { done: false, value: buf };
-			},
-		};
-	}
-
-	[Symbol.asyncIterator] () {
-		return this.getIterator();
+		p.set(block, 0);
+		return n;
 	}
 
 	/**
@@ -270,6 +242,8 @@ class TarEntry {
 
 		this.majorNumber = decodeOctal(header.majorNumber);
 		this.minorNumber = decodeOctal(header.minorNumber);
+
+		this.entrySize = Math.ceil(this.size / RECORD_SIZE) * RECORD_SIZE;
 	}
 }
 

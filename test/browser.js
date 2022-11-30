@@ -1,5 +1,5 @@
 import { Untar } from '../src/index.js';
-import { createStreamIterator } from '@intrnl/chunked-uint8-iterator';
+import { createIterableReader } from '@intrnl/iterable-reader';
 
 /** @type {HTMLInputElement} */
 let input = document.getElementById('input');
@@ -24,8 +24,10 @@ input.addEventListener('change', () => {
  * @param {AbortSignal} signal
  */
 async function retrieveTarListing (file, signal) {
-	let stream = createStreamIterator(file.stream());
-	let untar = new Untar(stream);
+	let iterator = createStreamIterator(file.stream());
+	let reader = createIterableReader(iterator);
+
+	let untar = new Untar(reader);
 
 	list.innerHTML = '';
 
@@ -39,4 +41,31 @@ async function retrieveTarListing (file, signal) {
 
 		list.appendChild(li);
 	}
+
+	reader.close();
+}
+
+// older browsers might not have async iterators on ReadableStream just yet.
+function createStreamIterator (stream) {
+	// return if browser already supports async iterator in stream
+	if (stream[Symbol.asyncIterator]) {
+		return stream[Symbol.asyncIterator]();
+	}
+
+	let reader = stream.getReader();
+
+	return {
+		[Symbol.asyncIterator] () {
+			return this;
+		},
+		next () {
+			return reader.read();
+		},
+		return () {
+			reader.releaseLock();
+		},
+		throw () {
+			reader.releaseLock();
+		},
+	};
 }
