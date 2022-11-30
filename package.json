@@ -2,7 +2,7 @@
 	"type": "module",
 	"name": "@intrnl/untar-stream",
 	"description": "Streamable implementation of untar",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"author": "intrnl",
 	"license": "MIT",
 	"repository": {
