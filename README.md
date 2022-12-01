@@ -31,34 +31,3 @@ for await (let entry of untar) {
 ```
 
 [iterable-reader]: https://codeberg.org/intrnl/iterable-reader
-
-## Working with Web Streams
-
-Unfortunately browsers hasn't implemented using ReadableStream directly as an
-async iterator, in the meantime, you could use this to convert them into one.
-
-```js
-function createStreamIterator (stream) {
-	// return if browser already supports async iterator in stream
-	if (Symbol.asyncIterator in stream) {
-		return stream[Symbol.asyncIterator]();
-	}
-
-	let reader = stream.getReader();
-
-	return {
-		[Symbol.asyncIterator] () {
-			return this;
-		},
-		next () {
-			return reader.read();
-		},
-		return () {
-			reader.releaseLock();
-		},
-		throw () {
-			reader.releaseLock();
-		},
-	};
-}
-```
